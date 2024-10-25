@@ -1,0 +1,130 @@
+unit Main;
+
+interface
+
+uses
+  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
+  FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs,
+  FlexCel.Core, FlexCel.XlsAdapter, FMX.Controls.Presentation, FlexCel.FMXSupport,
+  FMX.StdCtrls,FMXTee.Engine, FMXTee.Procs, FMXTee.Chart, FlexCel.Render,
+  FMXTee.Series, Math, System.IOUtils, ShellAPI;
+
+type
+  TForm1 = class(TForm)
+    Button1: TButton;
+    Chart: TChart;
+    ToolBar1: TToolBar;
+    Label1: TLabel;
+    procedure Button1Click(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+    FChartPicturePath: string;
+    FFlexCelPath: string;
+  end;
+
+var
+  Form1: TForm1;
+
+implementation
+
+{$R *.fmx}
+
+
+
+
+
+procedure TForm1.Button1Click(Sender: TObject);
+var
+  Xls: TXlsFile;
+  ImProps: IImageProperties;
+  Stream: TFileStream;
+  Img: TUIImage;
+  Sl: TLineSeries;
+  X, Y, XStart, XFinish, Step: Double;
+  I: Integer;
+  EChart : IExcelChart;
+  ChartOptions1: IShapeProperties;
+  Series: IChartSeries;
+begin
+  Xls := TXlsFile.Create(1, TExcelFileFormat.v2019, True);
+  try
+    Sl := TLineSeries.Create(Chart);
+    Sl.SeriesColor := TAlphaColors.Red;
+    Sl.Pen.Width := 4;
+    I := 1;
+    XStart := 0;
+    XFinish := 2 * PI;
+    Step := 0.01;
+    X := XStart;
+    while X < XFinish do
+    begin
+      Y := Sin(X);
+      Sl.AddXY(X, Y, '', TAlphaColors.Blue);
+      Xls.SetCellValue(I, 1, X);
+      Xls.SetCellValue(I, 2, Y);
+      X := X + Step;
+      Inc(I);
+    end;
+    Chart.AddSeries(Sl);
+    Chart.SaveToBitmapFile(FChartPicturePath);
+
+    ChartOptions1 := TShapeProperties_Create;
+    ChartOptions1.Anchor := TClientAnchor.Create(TFlxAnchorType.MoveAndResize, 1, 215, 1, 608, 30, 228, 17, 736);
+    ChartOptions1.ShapeName := 'Sin';
+    ChartOptions1.Print := true;
+    ChartOptions1.Visible := true;
+    ChartOptions1.ShapeOptions.SetValue(TShapeOption.fLockText, true);
+    ChartOptions1.ShapeOptions.SetValue(TShapeOption.LockRotation, true);
+    ChartOptions1.ShapeOptions.SetValue(TShapeOption.fAutoTextMargin, true);
+    ChartOptions1.ShapeOptions.SetValue(TShapeOption.fillColor, 134217806);
+    ChartOptions1.ShapeOptions.SetValue(TShapeOption.wzName, 'Sin');
+
+
+
+    EChart := xls.AddChart(ChartOptions1, TChartType.Line, TChartStyle.Create(102), false);
+    {Series := TChartSeries_Create(
+               '=' + TCellAddress.Create('Sheet1', 1, 1, true, true).CellRef,
+               '=' + TCellAddress.Create('Sheet1', 2, 1, true, true).CellRef + ':' + TCellAddress.Create('Data',  689, 1, true, true).CellRef,
+               '=Sheet!$A$0:$A$689');
+     }
+    //EChart.AddSeries(Series);
+
+    Xls.Save(FFlexCelPath);
+
+    {Stream := nil;
+    Img := nil;
+    try
+      Stream := TFileStream.Create(FChartPicturePath, fmOpenRead or fmShareDenyNone);
+      Img := TUIImage.FromStream(Stream);
+      ImProps := TImageProperties_Create();
+      ImProps.Anchor := TClientAnchor.Create(TFlxAnchorType.MoveAndDontResize,
+        4, 0, 4, 0, Trunc(Img.Height), Trunc(Img.Width), Xls);
+      ImProps.ShapeName := 'Picture 1';
+      Stream.Position := 0;
+      Xls.AddImage(Stream, ImProps);
+      Xls.Save(FFlexCelPath);
+    finally
+      Img.Free;
+      Stream.Free;
+      DeleteFile(FChartPicturePath);
+    end;}
+  finally
+    Xls.Free;
+  end;
+end;
+
+procedure TForm1.FormShow(Sender: TObject);
+begin
+
+  Chart.Legend.Visible := False;
+  Chart.View3D := False;
+  Chart.Title.Text.Clear;
+  Chart.Title.Text.Add('SIN');
+  FChartPicturePath := TPath.Combine(TPath.GetDocumentsPath, 'chart.bmp');
+  FFlexCelPath := TPath.Combine(TPath.GetDocumentsPath, 'MyFlexCelSample.xls');
+end;
+
+end.
